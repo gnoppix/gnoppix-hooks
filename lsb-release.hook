@@ -1,0 +1,10 @@
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = lsb-release
+
+[Action]
+Description = Updating Gnoppix specific configuration.
+When = PostTransaction
+Exec = /usr/bin/gnoppix-hooks-runner lsb-release

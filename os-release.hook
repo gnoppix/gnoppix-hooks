@@ -1,0 +1,10 @@
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = filesystem
+
+[Action]
+Description = Add specific Gnoppix config.
+When = PostTransaction
+Exec = /usr/bin/gnoppix-hooks-runner os-release

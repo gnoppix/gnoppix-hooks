@@ -1,0 +1,11 @@
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = gnoppix-hooks
+
+[Action]
+Description = Updating Gnoppix configuration.
+When = PostTransaction
+Depends = mkinitcpio
+Exec = /usr/bin/gnoppix-hooks-runner
