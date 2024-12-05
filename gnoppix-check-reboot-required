@@ -1,56 +1,30 @@
-#!/bin/bash
-
+#!/usr/bin/env bash
 # Avoid unnecessary reboots: don't notify if an updated package is
 # - not currently running (e.g. alternative kernel)
 # - not in use (e.g. alternative driver)
 
-RunningKernel() {
-    cat /proc/cmdline | sed 's|.*/vmlinuz-\(linux[a-z0-9-]*\) .*|\1|'
+_notify() {
+    exec /usr/bin/gnoppix-reboot-required
 }
 
-Main() {
-    local targets=$(tee /dev/null)  # targets from the hook (stdin)
-    local target
-    local notify=no
-    local runningKernel="$(RunningKernel)"
+targets=$(tee /dev/null)  # targets from the hook (stdin)
+kernelname="$(grep -oP '\(\K.*(?=@.*\))' /proc/version)"
 
-    for target in $targets ; do
-        case "$target" in
-            linux | linux-lts | linux-zen | linux-hardened | linux-lts?? | linux-lts???)
-                # Note: only official and older LTS kernels are checked.
-                if [[ "$target" = "$runningKernel" ]] ; then
-                    notify=yes
-                    break
-                fi
-                ;;
-            nvidia)
-                if [[ "$runningKernel" = "linux" ]] ; then
-                    notify=yes
-                    break
-                fi
-                ;;
-            nvidia-lts)
-                if [[ "$runningKernel" = "linux-lts" ]] ; then
-                    notify=yes
-                    break
-                fi
-                ;;
-            btrfs-progs)
-                if [[ -n "$(/usr/bin/df -hT | awk '{print $2}' | grep -w btrfs)" ]] ; then
-                    notify=yes
-                    break
-                fi
-                ;;
-            *)
-                notify=yes
-                break
-                ;;
-        esac
-    done
-
-    if [[ "$notify" = "yes" ]] ; then
-        /usr/bin/gnoppix-reboot-required
-    fi
-}
-
-Main "$@"
+for target in $targets ; do
+    case "$target" in
+        "$kernelname") _notify;;
+        nvidia)
+            [ "$kernelname" = "linux" ] && _notify;;
+        nvidia-lts)
+            [ "$kernelname" = "linux-lts" ] && _notify;;
+        linux-cachyos-nvidia*)
+            [[ "$kernelname" = linux-cachyos* ]] && _notify;;
+        btrfs-progs)
+            [ -n "$(mount -t btrfs)" ] && _notify;;
+        xfsprogs)
+            [ -n "$(mount -t xfs)" ] && _notify;;
+        e2fsprogs)
+            [ -n "$(mount -t ext4)" ] && _notify;;
+        *) _notify ;;
+    esac
+done
